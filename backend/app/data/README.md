@@ -1,0 +1,1 @@
+Market-data providers and validation live under this package. Add future providers by implementing MarketDataProvider rather than coupling analysis code to a vendor.
