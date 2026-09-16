@@ -19,7 +19,7 @@ class DataStatus(str, Enum):
 class MarketSnapshot(BaseModel):
     symbol: str
     asset_class: AssetClass
-    price: float = Field(gt=0)
+    price: float | None = Field(default=None, gt=0)
     timestamp: datetime
     source: str
     status: DataStatus
