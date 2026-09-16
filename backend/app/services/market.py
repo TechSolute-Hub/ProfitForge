@@ -1,3 +1,4 @@
+from datetime import datetime, timezone
 from app.core.config import Settings
 from app.data.providers.twelve_data import ProviderError, TwelveDataProvider
 from app.data.validation import validate_bars, validate_snapshot
@@ -15,10 +16,13 @@ class MarketService:
             return validate_snapshot(snapshot, self.settings)
         except (ProviderError, ValueError, KeyError, TypeError) as exc:
             return MarketSnapshot(
-                symbol=symbol.upper(), asset_class=asset_class, price=0.000001,
-                timestamp=__import__('datetime').datetime.now(__import__('datetime').timezone.utc),
-                source=self.provider.name, status=DataStatus.UNAVAILABLE,
-            ).model_copy(update={"price": 0.0})
+                symbol=symbol.upper(),
+                asset_class=asset_class,
+                price=None,
+                timestamp=datetime.now(timezone.utc),
+                source=self.provider.name,
+                status=DataStatus.UNAVAILABLE,
+            )
 
     async def bars(self, symbol: str, interval: str, outputsize: int = 200) -> list[OHLCVBar]:
         bars = await self.provider.ohlcv(symbol.upper(), interval, outputsize)
