@@ -3,6 +3,8 @@ from enum import Enum
 
 from pydantic import BaseModel, Field
 
+from app.models.context import EconomicContext, NewsSentimentSnapshot
+
 
 class AssetClass(str, Enum):
     STOCK = "stock"
@@ -55,6 +57,8 @@ class ResearchResult(BaseModel):
     timeframe_analysis: dict[str, object] = Field(default_factory=dict)
     data_quality: str = "UNKNOWN"
     unavailable_factors: list[str] = Field(default_factory=list)
+    news_sentiment: NewsSentimentSnapshot | None = None
+    economic_context: EconomicContext | None = None
     explanation: list[str]
     invalidation: str
     alternative_scenario: str
