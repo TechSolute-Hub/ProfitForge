@@ -4,7 +4,7 @@ from dataclasses import asdict, dataclass
 
 from app.analysis.indicators import compute_indicators
 from app.analysis.regime import detect_regime
-from app.analysis.scoring import aggregate_score, assess_factors, confidence_score
+from app.analysis.scoring import FactorAssessment, aggregate_score, assess_factors, confidence_score
 from app.analysis.structure import analyze_structure
 from app.models.market import OHLCVBar
 
@@ -37,13 +37,25 @@ def _bias(score: int) -> str:
     return "NEUTRAL"
 
 
-def analyze_timeframe(timeframe: str, bars: list[OHLCVBar], mtf_alignment: float = 0.0) -> TimeframeAnalysis:
+def analyze_timeframe(
+    timeframe: str,
+    bars: list[OHLCVBar],
+    mtf_alignment: float = 0.0,
+    news_score: float | None = None,
+    news_reason: str | None = None,
+) -> TimeframeAnalysis:
     if len(bars) < 220:
         raise ValueError(f"{timeframe}: at least 220 bars are required")
     indicators = compute_indicators(bars)
     structure = analyze_structure(bars)
     regime = detect_regime(bars, indicators)
-    assessments = assess_factors(bars, indicators, structure)
+    assessments = assess_factors(
+        bars,
+        indicators,
+        structure,
+        news_score=news_score,
+        news_reason=news_reason,
+    )
     score, contributions, available_weight = aggregate_score(assessments)
     confidence = confidence_score(score, assessments, mtf_alignment)
     factor_scores = {name: round(item.score, 2) for name, item in assessments.items()}
@@ -52,19 +64,37 @@ def analyze_timeframe(timeframe: str, bars: list[OHLCVBar], mtf_alignment: float
     indicator_values = asdict(indicators)
     structure_values = asdict(structure)
     return TimeframeAnalysis(
-        timeframe=timeframe, score=score, bias=_bias(score), confidence=confidence, regime=regime,
-        factors=factor_scores, contributions=contributions, indicators=indicator_values,
-        structure=structure_values, bars_used=len(bars), data_quality=quality,
+        timeframe=timeframe,
+        score=score,
+        bias=_bias(score),
+        confidence=confidence,
+        regime=regime,
+        factors=factor_scores,
+        contributions=contributions,
+        indicators=indicator_values,
+        structure=structure_values,
+        bars_used=len(bars),
+        data_quality=quality,
         unavailable_factors=unavailable,
     )
 
 
-def analyze_multi_timeframe(bars_by_timeframe: dict[str, list[OHLCVBar]], primary: str = "1day") -> dict[str, object]:
+def analyze_multi_timeframe(
+    bars_by_timeframe: dict[str, list[OHLCVBar]],
+    primary: str = "1day",
+    news_score: float | None = None,
+    news_reason: str | None = None,
+) -> dict[str, object]:
     analyses: dict[str, TimeframeAnalysis] = {}
     for timeframe in TIMEFRAME_ORDER:
         bars = bars_by_timeframe.get(timeframe)
         if bars:
-            analyses[timeframe] = analyze_timeframe(timeframe, bars)
+            analyses[timeframe] = analyze_timeframe(
+                timeframe,
+                bars,
+                news_score=news_score,
+                news_reason=news_reason,
+            )
 
     if primary not in analyses:
         raise ValueError(f"primary timeframe {primary!r} is unavailable")
@@ -84,6 +114,10 @@ def analyze_multi_timeframe(bars_by_timeframe: dict[str, list[OHLCVBar]], primar
     alignment = aligned_weight / total_weight if total_weight else 0.0
     final_score = round(max(-100, min(100, 0.75 * primary_analysis.score + 0.25 * mtf_score)))
     final_bias = _bias(final_score)
+    confidence_factors = {
+        name: FactorAssessment(value, 1.0, True, "")
+        for name, value in primary_analysis.factors.items()
+    }
     return {
         "primary": primary,
         "score": final_score,
@@ -91,7 +125,5 @@ def analyze_multi_timeframe(bars_by_timeframe: dict[str, list[OHLCVBar]], primar
         "mtf_score": mtf_score,
         "alignment": round(alignment * 100),
         "timeframes": {key: asdict(value) for key, value in analyses.items()},
-        "confidence": confidence_score(final_score, {
-            name: type("Factor", (), {"score": value, "available": True})() for name, value in primary_analysis.factors.items()
-        }, alignment),
+        "confidence": confidence_score(final_score, confidence_factors, alignment),
     }
