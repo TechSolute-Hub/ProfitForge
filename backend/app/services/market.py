@@ -5,7 +5,8 @@ from functools import lru_cache
 
 from app.core.cache import AsyncTTLCache
 from app.core.config import Settings, get_settings
-from app.data.providers.twelve_data import ProviderError, TwelveDataProvider
+from app.data.providers.router import MarketDataRouter
+from app.data.providers.twelve_data import ProviderError
 from app.data.validation import validate_bars, validate_snapshot
 from app.models.market import AssetClass, DataStatus, MarketSnapshot, OHLCVBar
 
@@ -14,7 +15,7 @@ class MarketService:
     """Validated market-data access with process-local TTL caching."""
 
     def __init__(self, settings: Settings):
-        self.provider = TwelveDataProvider(settings)
+        self.provider = MarketDataRouter(settings)
         self.settings = settings
         self._quote_cache: AsyncTTLCache[MarketSnapshot] = AsyncTTLCache(
             default_ttl_seconds=settings.quote_cache_seconds
@@ -37,7 +38,7 @@ class MarketService:
                     asset_class=asset_class,
                     price=None,
                     timestamp=datetime.now(timezone.utc),
-                    source=self.provider.name,
+                    source="market-provider-router",
                     status=DataStatus.UNAVAILABLE,
                 )
 
