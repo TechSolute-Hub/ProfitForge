@@ -10,6 +10,7 @@ from app.core.config import Settings, get_settings
 from app.models.market import AssetClass, ResearchResult
 from app.persistence.repository import ResearchHistoryRecord, SavedAnalysis, WatchlistItem
 from app.persistence.supabase_repository import (
+    SupabaseRepository,
     SupabaseRepositoryError,
     create_supabase_repository,
 )
@@ -72,7 +73,7 @@ async def get_current_user(
 def repository(
     authorization: str | None,
     settings: Settings,
-) -> object:
+) -> SupabaseRepository:
     token = authorization[7:].strip() if authorization else ""
     try:
         return create_supabase_repository(settings, token)
