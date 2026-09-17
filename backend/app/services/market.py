@@ -1,9 +1,10 @@
 from __future__ import annotations
 
 from datetime import datetime, timezone
+from functools import lru_cache
 
 from app.core.cache import AsyncTTLCache
-from app.core.config import Settings
+from app.core.config import Settings, get_settings
 from app.data.providers.twelve_data import ProviderError, TwelveDataProvider
 from app.data.validation import validate_bars, validate_snapshot
 from app.models.market import AssetClass, DataStatus, MarketSnapshot, OHLCVBar
@@ -64,3 +65,10 @@ class MarketService:
         return await self._bars_cache.get_or_set(
             key, fetch, ttl_seconds=self.settings.bars_cache_seconds
         )
+
+
+@lru_cache(maxsize=1)
+def get_market_service() -> MarketService:
+    """Return the process-wide market service so caches survive HTTP requests."""
+
+    return MarketService(get_settings())
