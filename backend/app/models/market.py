@@ -1,5 +1,6 @@
 from datetime import datetime
 from enum import Enum
+
 from pydantic import BaseModel, Field
 
 
@@ -46,6 +47,14 @@ class ResearchResult(BaseModel):
     confidence: int = Field(ge=0, le=100)
     regime: str
     factors: dict[str, float]
+    factor_contributions: dict[str, float] = Field(default_factory=dict)
+    indicators: dict[str, float] = Field(default_factory=dict)
+    structure: dict[str, object] = Field(default_factory=dict)
+    mtf_score: int = Field(default=0, ge=-100, le=100)
+    mtf_alignment: int = Field(default=0, ge=0, le=100)
+    timeframe_analysis: dict[str, object] = Field(default_factory=dict)
+    data_quality: str = "UNKNOWN"
+    unavailable_factors: list[str] = Field(default_factory=list)
     explanation: list[str]
     invalidation: str
     alternative_scenario: str
