@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import asyncio
 from functools import lru_cache
 
 from app.core.cache import AsyncTTLCache
@@ -49,7 +50,7 @@ class MarketContextService:
             return None
 
     async def context(self, symbol: str, asset_class: AssetClass) -> MarketContext:
-        news, economic = await __import__("asyncio").gather(
+        news, economic = await asyncio.gather(
             self.news(symbol, asset_class),
             self.economic(symbol, asset_class),
         )
