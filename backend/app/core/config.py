@@ -14,6 +14,9 @@ class Settings(BaseSettings):
     alpha_vantage_base_url: str = "https://www.alphavantage.co/query"
     provider_request_timeout_seconds: float = Field(default=15.0, gt=0, le=60)
 
+    news_cache_seconds: int = Field(default=300, ge=0, le=86400)
+    economic_cache_seconds: int = Field(default=1800, ge=0, le=86400)
+
     supabase_url: str = ""
     supabase_publishable_key: str = ""
     supabase_request_timeout_seconds: float = Field(default=10.0, gt=0, le=60)
