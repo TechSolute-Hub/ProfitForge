@@ -31,6 +31,8 @@ def assess_factors(
     bars: list,
     indicators: IndicatorSnapshot,
     structure: StructureSnapshot,
+    news_score: float | None = None,
+    news_reason: str | None = None,
 ) -> dict[str, FactorAssessment]:
     trend = 0.0
     if indicators.ema20 > indicators.ema50 > indicators.ema200:
@@ -82,12 +84,19 @@ def assess_factors(
     elif structure.bos == "BEARISH":
         structure_score = -100.0
 
+    news_available = news_score is not None
+    bounded_news_score = _clamp(news_score) if news_score is not None else 0.0
     return {
         "htf_trend": FactorAssessment(trend, WEIGHTS["htf_trend"], True, "EMA20/50/200 alignment."),
         "momentum": FactorAssessment(momentum, WEIGHTS["momentum"], True, "RSI, MACD histogram and ADX."),
         "volume_confirmation": FactorAssessment(volume_score, WEIGHTS["volume_confirmation"], volume_available, volume_reason),
         "market_structure": FactorAssessment(structure_score, WEIGHTS["market_structure"], True, f"{structure.high_sequence}/{structure.low_sequence} structure."),
-        "news_sentiment": FactorAssessment(0.0, WEIGHTS["news_sentiment"], False, "News/sentiment provider is not enabled in Phase 2; no value is fabricated."),
+        "news_sentiment": FactorAssessment(
+            bounded_news_score,
+            WEIGHTS["news_sentiment"],
+            news_available,
+            news_reason or "News/sentiment data is unavailable; no value is fabricated.",
+        ),
     }
 
 
