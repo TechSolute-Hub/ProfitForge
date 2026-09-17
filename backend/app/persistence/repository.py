@@ -14,6 +14,7 @@ class WatchlistItem:
     symbol: str
     asset_class: AssetClass
     notes: str | None = None
+    watchlist_id: UUID | None = None
 
 
 @dataclass(frozen=True, slots=True)
