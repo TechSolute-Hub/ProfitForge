@@ -6,9 +6,16 @@ Market providers -> provider router -> normalization/validation -> canonical sna
                                          -> technical analysis
                                          -> structure/regime
                                          -> scoring/explainability
+                                         -> context: news/sentiment/economic events
                                          -> research API -> frontend
                                                         -> authenticated user state
                                                            -> Supabase/Postgres
+
+Historical OHLCV + point-in-time scores
+                  -> no-look-ahead backtest
+                  -> costs/slippage
+                  -> outcome labels
+                  -> validation metrics
 ```
 
 ## Data integrity
@@ -32,5 +39,15 @@ The market service now uses a deterministic provider router. Twelve Data remains
 
 Provider failures are isolated at the provider boundary. The analysis layer receives only canonical `MarketSnapshot` and `OHLCVBar` models, so adding another provider does not require changes to technical-analysis code.
 
+## Phase 6 contextual intelligence
+News and sentiment are supplied by an optional Alpha Vantage context provider. The context layer preserves article timestamps, source URLs, relevance and sentiment metadata. Economic context currently includes supported stock earnings events. Context is cached independently from market prices and is retrieved concurrently with other research inputs.
+
+The `news_sentiment` scoring factor is only enabled when real provider data is available. Missing or failed context is excluded and the remaining factor weights are renormalized; no synthetic neutral sentiment is inserted.
+
+## Phase 7 validation and backtesting
+The backtest engine is deliberately separate from live research analysis. A score at bar `t` is treated as available only after bar `t` closes; an entry therefore occurs at bar `t+1` open. The engine supports explicit fees and slippage, configurable stop-loss/take-profit assumptions, bounded holding periods, chronological-data validation and conservative handling when both stop and target are touched within one candle.
+
+Forward outcome labeling likewise uses the next bar's open and later bars only. Insufficient future data produces an unresolved label instead of a fabricated outcome. These contracts are intended to prevent look-ahead leakage when historical signals are later connected to adaptive learning or model validation.
+
 ## Production direction
-Next phases should add news/economic-calendar ingestion, scheduled research jobs, signal outcome tracking, backtesting with costs/slippage, adaptive weight versioning, observability, alert delivery, and additional provider coverage where freshness and licensing requirements are satisfied.
+Next phases should add rolling/out-of-sample validation, walk-forward evaluation, signal/outcome persistence, adaptive weight versioning, observability, scheduled research jobs, alert delivery and additional provider coverage where freshness and licensing requirements are satisfied.
