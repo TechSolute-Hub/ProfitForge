@@ -5,7 +5,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query
 from app.analysis.engine import analyze_multi_timeframe
 from app.core.config import Settings, get_settings
 from app.models.market import AssetClass, DataStatus, ResearchResult
-from app.services.market import MarketService
+from app.services.market import MarketService, get_market_service
 
 router = APIRouter(prefix="/research", tags=["research"])
 DISCLAIMER = "This tool provides market research and analysis assistance only. It is **not** financial advice, a recommendation to buy or sell, or a substitute for professional advice. Trading and investing involve substantial risk of loss. Past performance is not indicative of future results. Users are solely responsible for their own decisions."
@@ -32,8 +32,8 @@ async def analyze(
     asset_class: AssetClass = AssetClass.STOCK,
     timeframe: str = Query(default="1day", pattern="^(1h|4h|1day|1week)$"),
     settings: Settings = Depends(get_settings),
+    service: MarketService = Depends(get_market_service),
 ) -> ResearchResult:
-    service = MarketService(settings)
     snapshot = await service.quote(symbol, asset_class)
     if snapshot.status != DataStatus.LIVE:
         raise HTTPException(
