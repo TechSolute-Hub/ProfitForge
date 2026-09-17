@@ -4,6 +4,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query
 
 from app.analysis.engine import analyze_multi_timeframe
 from app.models.market import AssetClass, DataStatus, ResearchResult
+from app.services.context import MarketContextService, get_market_context_service
 from app.services.market import MarketService, get_market_service
 
 router = APIRouter(prefix="/research", tags=["research"])
@@ -21,7 +22,6 @@ async def _fetch_timeframe(
         bars = await service.bars(symbol, timeframe, BARS_PER_TIMEFRAME)
         return timeframe, bars, None
     except Exception:
-        # Provider details stay server-side; the API exposes only a stable category.
         return timeframe, None, "data_unavailable"
 
 
@@ -31,6 +31,7 @@ async def analyze(
     asset_class: AssetClass = AssetClass.STOCK,
     timeframe: str = Query(default="1day", pattern="^(1h|4h|1day|1week)$"),
     service: MarketService = Depends(get_market_service),
+    context_service: MarketContextService = Depends(get_market_context_service),
 ) -> ResearchResult:
     snapshot = await service.quote(symbol, asset_class)
     if snapshot.status != DataStatus.LIVE:
@@ -60,8 +61,21 @@ async def analyze(
             detail="Requested timeframe could not be analyzed because its market history is unavailable.",
         )
 
+    context = await context_service.context(symbol, asset_class)
+    news_score = context.news.score if context.news else None
+    news_reason = (
+        f"{context.news.article_count} recent articles; weighted sentiment is {context.news.label.lower()} ({context.news.score:.1f})."
+        if context.news
+        else "News/sentiment data is unavailable; no value is fabricated."
+    )
+
     try:
-        intelligence = analyze_multi_timeframe(bars_by_timeframe, primary=timeframe)
+        intelligence = analyze_multi_timeframe(
+            bars_by_timeframe,
+            primary=timeframe,
+            news_score=news_score,
+            news_reason=news_reason,
+        )
     except (ValueError, KeyError) as exc:
         raise HTTPException(
             status_code=422,
@@ -83,6 +97,16 @@ async def analyze(
         f"Confirmed structure is {primary['structure']['high_sequence']}/{primary['structure']['low_sequence']} with {primary['structure']['bias']} structural bias.",
         f"Multi-timeframe alignment is {intelligence['alignment']}%, supporting {direction} price pressure.",
     ]
+    if context.news:
+        explanations.append(
+            f"News context: {context.news.label.lower()} sentiment from {context.news.article_count} recent relevant articles."
+        )
+    else:
+        explanations.append("News context is unavailable; it is excluded from the score rather than inferred.")
+    if context.economic and context.economic.events:
+        explanations.append(
+            f"Economic context: {len(context.economic.events)} upcoming earnings event(s) were found for this stock."
+        )
     if failures:
         explanations.append(
             f"Unavailable timeframes: {', '.join(sorted(failures))}; missing data is not fabricated."
@@ -91,8 +115,8 @@ async def analyze(
     return ResearchResult(
         symbol=symbol.upper(),
         asset_class=asset_class,
-        snapshot=snapshot,
         timeframe=timeframe,
+        snapshot=snapshot,
         bias=intelligence["bias"],
         score=intelligence["score"],
         confidence=intelligence["confidence"],
@@ -106,6 +130,8 @@ async def analyze(
         timeframe_analysis=intelligence["timeframes"],
         data_quality=primary["data_quality"],
         unavailable_factors=primary["unavailable_factors"],
+        news_sentiment=context.news,
+        economic_context=context.economic,
         explanation=explanations,
         invalidation=(
             f"A confirmed break against the {timeframe} swing structure would weaken "
