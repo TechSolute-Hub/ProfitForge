@@ -3,7 +3,6 @@ import asyncio
 from fastapi import APIRouter, Depends, HTTPException, Query
 
 from app.analysis.engine import analyze_multi_timeframe
-from app.core.config import Settings, get_settings
 from app.models.market import AssetClass, DataStatus, ResearchResult
 from app.services.market import MarketService, get_market_service
 
@@ -31,7 +30,6 @@ async def analyze(
     symbol: str = Query(min_length=1, max_length=30),
     asset_class: AssetClass = AssetClass.STOCK,
     timeframe: str = Query(default="1day", pattern="^(1h|4h|1day|1week)$"),
-    settings: Settings = Depends(get_settings),
     service: MarketService = Depends(get_market_service),
 ) -> ResearchResult:
     snapshot = await service.quote(symbol, asset_class)
