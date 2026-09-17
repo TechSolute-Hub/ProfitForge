@@ -4,8 +4,6 @@ from datetime import datetime
 
 from pydantic import BaseModel, Field
 
-from app.models.market import AssetClass
-
 
 class NewsItem(BaseModel):
     title: str
@@ -19,7 +17,7 @@ class NewsItem(BaseModel):
 
 class NewsSentimentSnapshot(BaseModel):
     symbol: str
-    asset_class: AssetClass
+    asset_class: str
     score: float = Field(ge=-100, le=100)
     label: str
     article_count: int = Field(ge=0)
@@ -39,7 +37,7 @@ class EconomicEvent(BaseModel):
 
 class EconomicContext(BaseModel):
     symbol: str
-    asset_class: AssetClass
+    asset_class: str
     events: list[EconomicEvent] = Field(default_factory=list)
     source: str
     observed_at: datetime
