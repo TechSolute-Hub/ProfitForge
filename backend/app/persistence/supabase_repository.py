@@ -77,27 +77,25 @@ class SupabaseRepository:
 
     async def ensure_default_watchlist(self, user_id: UUID) -> UUID:
         rows = await self._request(
-            "GET",
-            "watchlists",
-            params={
-                "select": "id",
-                "user_id": f"eq.{user_id}",
-                "name": "eq.Default",
-                "limit": "1",
-            },
-        )
-        if rows:
-            return UUID(str(rows[0]["id"]))
-
-        created = await self._request(
             "POST",
             "watchlists",
             json={"user_id": str(user_id), "name": "Default"},
-            prefer="return=representation",
+            prefer="resolution=merge-duplicates,return=representation",
         )
-        if not created:
+        if not rows:
+            rows = await self._request(
+                "GET",
+                "watchlists",
+                params={
+                    "select": "id",
+                    "user_id": f"eq.{user_id}",
+                    "name": "eq.Default",
+                    "limit": "1",
+                },
+            )
+        if not rows:
             raise SupabaseRepositoryError("Supabase did not return the default watchlist")
-        return UUID(str(created[0]["id"]))
+        return UUID(str(rows[0]["id"]))
 
     async def list_watchlists(self, user_id: UUID) -> list[dict[str, object]]:
         return await self._request(
