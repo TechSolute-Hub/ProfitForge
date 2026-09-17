@@ -1,4 +1,5 @@
 name: CI
+
 on:
   push:
     branches: [main]
@@ -16,7 +17,9 @@ jobs:
         with:
           python-version: '3.11'
       - run: pip install -r requirements.txt
-      - run: python -m compileall app
+      - run: python -m compileall app tests
+      - run: python -m pytest -q
+
   frontend:
     runs-on: ubuntu-latest
     defaults:
