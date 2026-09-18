@@ -33,7 +33,20 @@ def assess_factors(
     structure: StructureSnapshot,
     news_score: float | None = None,
     news_reason: str | None = None,
+    weights: dict[str, float] | None = None,
 ) -> dict[str, FactorAssessment]:
+    active_weights = dict(WEIGHTS)
+    if weights is not None:
+        unknown = set(weights) - set(WEIGHTS)
+        missing = set(WEIGHTS) - set(weights)
+        if unknown or missing:
+            raise ValueError("factor weights must match the canonical factor set")
+        if any(value <= 0 for value in weights.values()):
+            raise ValueError("factor weights must be positive")
+        if abs(sum(weights.values()) - 1.0) > 1e-6:
+            raise ValueError("factor weights must sum to 1")
+        active_weights.update(weights)
+
     trend = 0.0
     if indicators.ema20 > indicators.ema50 > indicators.ema200:
         trend = 100.0
@@ -87,13 +100,13 @@ def assess_factors(
     news_available = news_score is not None
     bounded_news_score = _clamp(news_score) if news_score is not None else 0.0
     return {
-        "htf_trend": FactorAssessment(trend, WEIGHTS["htf_trend"], True, "EMA20/50/200 alignment."),
-        "momentum": FactorAssessment(momentum, WEIGHTS["momentum"], True, "RSI, MACD histogram and ADX."),
-        "volume_confirmation": FactorAssessment(volume_score, WEIGHTS["volume_confirmation"], volume_available, volume_reason),
-        "market_structure": FactorAssessment(structure_score, WEIGHTS["market_structure"], True, f"{structure.high_sequence}/{structure.low_sequence} structure."),
+        "htf_trend": FactorAssessment(trend, active_weights["htf_trend"], True, "EMA20/50/200 alignment."),
+        "momentum": FactorAssessment(momentum, active_weights["momentum"], True, "RSI, MACD histogram and ADX."),
+        "volume_confirmation": FactorAssessment(volume_score, active_weights["volume_confirmation"], volume_available, volume_reason),
+        "market_structure": FactorAssessment(structure_score, active_weights["market_structure"], True, f"{structure.high_sequence}/{structure.low_sequence} structure."),
         "news_sentiment": FactorAssessment(
             bounded_news_score,
-            WEIGHTS["news_sentiment"],
+            active_weights["news_sentiment"],
             news_available,
             news_reason or "News/sentiment data is unavailable; no value is fabricated.",
         ),
