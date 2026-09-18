@@ -63,3 +63,12 @@ The adaptive learner proposes changes only to research-factor weights from valid
 Candidate model versions are immutable records with parent lineage, training/OOS observation counts, validation metrics and an artifact checksum. A version must first be marked VALIDATED and can then be explicitly activated. Promotion policy and activation are separate so validation does not silently become deployment. Activating a new version rolls the prior active version back to a retained version record.
 
 Machine-learning promotion remains a later controlled step: candidate models must be evaluated OOS and explicitly promoted after validation. Adaptive learning cannot automatically increase risk.
+
+## Phase 8 integration: outcomes -> validation -> model -> live scoring
+Resolved signal outcomes are persisted per authenticated user in `signal_outcomes`. The record retains the original factor scores, regime, signal timestamp and realized forward return. This creates the historical dataset used by adaptive learning without changing the original signal retrospectively.
+
+A server-side learning repository reads resolved outcomes, builds candidate factor weights from chronological training data, and evaluates candidates with rolling walk-forward OOS windows. A candidate remains DRAFT until its OOS evidence satisfies the promotion policy. Failed candidates remain unvalidated and cannot become active.
+
+Model versions are persisted in `model_versions`. Only the server-side Supabase secret key may access this table; it is never exposed to the frontend. The active version is the only learned weight set supplied to the live analysis engine. If model persistence is unavailable, the engine safely falls back to the canonical baseline weights rather than using an unverified candidate.
+
+Activation is explicit and gated: only VALIDATED versions can become ACTIVE, and activation retires the previous active version as ROLLED_BACK. No learning component can modify risk limits, execution controls or other safety settings.
