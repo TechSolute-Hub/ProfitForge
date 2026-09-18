@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from datetime import datetime
 
 from app.models.market import OHLCVBar
 
@@ -8,7 +9,7 @@ from app.models.market import OHLCVBar
 @dataclass(frozen=True)
 class OutcomeLabel:
     signal_index: int
-    signal_time: object
+    signal_time: datetime
     entry_price: float
     horizon_bars: int
     forward_return_pct: float | None
