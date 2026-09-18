@@ -72,3 +72,15 @@ A server-side learning repository reads resolved outcomes, builds candidate fact
 Model versions are persisted in `model_versions`. Only the server-side Supabase secret key may access this table; it is never exposed to the frontend. The active version is the only learned weight set supplied to the live analysis engine. If model persistence is unavailable, the engine safely falls back to the canonical baseline weights rather than using an unverified candidate.
 
 Activation is explicit and gated: only VALIDATED versions can become ACTIVE, and activation retires the previous active version as ROLLED_BACK. No learning component can modify risk limits, execution controls or other safety settings.
+
+
+## Phase 9 controlled learning operations
+Signal outcomes submitted by authenticated users are stored as unverified observations. The client cannot mark an outcome as verified through RLS. A server-side verification job reconstructs the forward outcome from historical OHLCV using the original signal timestamp and horizon, then marks the record verified.
+
+Only verified outcomes are eligible for adaptive learning. This prevents client-supplied returns or labels from silently contaminating the model-training dataset.
+
+Candidate validation uses a strict chronological holdout. The candidate is trained only on observations before the holdout and is evaluated on the untouched later segment. The active baseline is evaluated on the same holdout. Promotion requires the minimum OOS sample and expectancy gates and rejects material degradation versus the baseline.
+
+The scheduled learning workflow verifies pending outcomes and creates/validates a candidate. It does not activate the candidate. Activation remains a separate server-side operation against a VALIDATED model version. Model activation is performed by a restricted Supabase database function so retiring the previous active model and activating the new model occur in one database transaction.
+
+The live research API reads only the ACTIVE model. If model persistence is unavailable, it falls back to the canonical factor weights. No learning path can modify risk controls, execution settings, position sizing, or safety thresholds.
