@@ -66,17 +66,18 @@ class SupabaseModelRepository:
         return _model_from_row(rows[0])
 
     async def activate(self, version_id: str) -> ModelVersion:
-        candidate = await self.get_model(version_id)
-        if candidate is None or candidate.status != VersionStatus.VALIDATED:
-            raise ModelPersistenceError("Only validated model versions can be activated")
-        await self._request("PATCH", "model_versions", params={"model_family":f"eq.{candidate.model_family}","status":"eq.ACTIVE"}, payload={"status":VersionStatus.ROLLED_BACK.value,"rolled_back_at":datetime.now(timezone.utc).isoformat()})
-        rows = await self._request("PATCH", "model_versions", params={"version_id":f"eq.{version_id}","status":"eq.VALIDATED"}, payload={"status":VersionStatus.ACTIVE.value,"activated_at":datetime.now(timezone.utc).isoformat()}, prefer="return=representation")
+        rows = await self._request(
+            "POST",
+            "rpc/activate_model_version",
+            payload={"p_version_id": version_id},
+            prefer="return=representation",
+        )
         if not rows:
             raise ModelPersistenceError("Model version activation failed")
         return _model_from_row(rows[0])
 
     async def signal_outcomes(self, limit: int = 5000) -> list[SignalOutcomeObservation]:
-        rows = await self._request("GET", "signal_outcomes", params={"select":"signal_id,signal_time,factor_scores,outcome_return_pct,regime","outcome_return_pct":"not.is.null","order":"signal_time.asc","limit":str(limit)})
+        rows = await self._request("GET", "signal_outcomes", params={"select":"signal_id,signal_time,factor_scores,outcome_return_pct,regime","outcome_return_pct":"not.is.null","verified":"eq.true","order":"signal_time.asc","limit":str(limit)})
         result: list[SignalOutcomeObservation] = []
         for row in rows:
             scores, outcome = row.get("factor_scores"), row.get("outcome_return_pct")
