@@ -193,13 +193,17 @@ class SupabaseRepository:
         }
         await self._request("POST", "research_history", json=payload)
 
-
-def create_supabase_repository(settings: Settings, access_token: str) -> SupabaseRepository:
-    return SupabaseRepository(settings, access_token)
-
-
     async def record_signal_outcome(self, payload: dict[str, object]) -> None:
         """Persist a user-owned resolved signal outcome through RLS."""
         safe_payload = dict(payload)
         safe_payload["user_id"] = str(safe_payload.get("user_id"))
-        await self._request("POST", "signal_outcomes", json=safe_payload, prefer="resolution=merge-duplicates,return=minimal")
+        await self._request(
+            "POST",
+            "signal_outcomes",
+            json=safe_payload,
+            prefer="resolution=merge-duplicates,return=minimal",
+        )
+
+
+def create_supabase_repository(settings: Settings, access_token: str) -> SupabaseRepository:
+    return SupabaseRepository(settings, access_token)
