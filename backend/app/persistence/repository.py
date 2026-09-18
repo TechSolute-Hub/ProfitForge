@@ -61,3 +61,6 @@ class ResearchRepository(Protocol):
 
     async def record_history(self, record: ResearchHistoryRecord) -> None:
         """Persist an immutable research observation."""
+
+    async def record_signal_outcome(self, payload: dict[str, object]) -> None:
+        """Persist a resolved signal outcome for adaptive learning."""
