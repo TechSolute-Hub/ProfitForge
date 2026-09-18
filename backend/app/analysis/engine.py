@@ -43,6 +43,7 @@ def analyze_timeframe(
     mtf_alignment: float = 0.0,
     news_score: float | None = None,
     news_reason: str | None = None,
+    factor_weights: dict[str, float] | None = None,
 ) -> TimeframeAnalysis:
     if len(bars) < 220:
         raise ValueError(f"{timeframe}: at least 220 bars are required")
@@ -55,14 +56,13 @@ def analyze_timeframe(
         structure,
         news_score=news_score,
         news_reason=news_reason,
+        weights=factor_weights,
     )
     score, contributions, available_weight = aggregate_score(assessments)
     confidence = confidence_score(score, assessments, mtf_alignment)
     factor_scores = {name: round(item.score, 2) for name, item in assessments.items()}
     unavailable = [name for name, item in assessments.items() if not item.available]
     quality = "HIGH" if available_weight >= 0.85 else "MODERATE" if available_weight >= 0.70 else "LIMITED"
-    indicator_values = asdict(indicators)
-    structure_values = asdict(structure)
     return TimeframeAnalysis(
         timeframe=timeframe,
         score=score,
@@ -71,8 +71,8 @@ def analyze_timeframe(
         regime=regime,
         factors=factor_scores,
         contributions=contributions,
-        indicators=indicator_values,
-        structure=structure_values,
+        indicators=asdict(indicators),
+        structure=asdict(structure),
         bars_used=len(bars),
         data_quality=quality,
         unavailable_factors=unavailable,
@@ -84,6 +84,7 @@ def analyze_multi_timeframe(
     primary: str = "1day",
     news_score: float | None = None,
     news_reason: str | None = None,
+    factor_weights: dict[str, float] | None = None,
 ) -> dict[str, object]:
     analyses: dict[str, TimeframeAnalysis] = {}
     for timeframe in TIMEFRAME_ORDER:
@@ -94,6 +95,7 @@ def analyze_multi_timeframe(
                 bars,
                 news_score=news_score,
                 news_reason=news_reason,
+                factor_weights=factor_weights,
             )
 
     if primary not in analyses:
@@ -126,4 +128,5 @@ def analyze_multi_timeframe(
         "alignment": round(alignment * 100),
         "timeframes": {key: asdict(value) for key, value in analyses.items()},
         "confidence": confidence_score(final_score, confidence_factors, alignment),
+        "factor_weights": factor_weights,
     }
