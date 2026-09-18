@@ -86,6 +86,38 @@ class SupabaseModelRepository:
             result.append(SignalOutcomeObservation(str(row["signal_id"]),str(row["signal_time"]),{str(k):float(v) for k,v in scores.items() if isinstance(v,(int,float))},float(outcome),str(row.get("regime") or "UNKNOWN")))
         return result
 
+    async def pending_signal_outcomes(self, limit: int = 100) -> list[dict[str, object]]:
+        return await self._request(
+            "GET",
+            "signal_outcomes",
+            params={
+                "select": "id,symbol,asset_class,timeframe,signal_time,horizon_bars",
+                "verified": "eq.false",
+                "order": "signal_time.asc",
+                "limit": str(limit),
+            },
+        )
+
+    async def mark_signal_outcome_verified(
+        self,
+        outcome_id: str,
+        outcome_return_pct: float,
+        outcome_label: str,
+        outcome_time: datetime,
+    ) -> None:
+        await self._request(
+            "PATCH",
+            "signal_outcomes",
+            params={"id": f"eq.{outcome_id}", "verified": "eq.false"},
+            payload={
+                "outcome_return_pct": outcome_return_pct,
+                "outcome_label": outcome_label,
+                "outcome_time": outcome_time.astimezone(timezone.utc).isoformat(),
+                "verified": True,
+                "verified_at": datetime.now(timezone.utc).isoformat(),
+            },
+        )
+
     async def record_signal_outcome(self, payload: dict[str, object]) -> None:
         await self._request("POST", "signal_outcomes", payload=payload, prefer="resolution=merge-duplicates,return=minimal")
 
