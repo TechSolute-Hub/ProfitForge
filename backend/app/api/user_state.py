@@ -38,6 +38,7 @@ class SaveAnalysisRequest(BaseModel):
 class SignalOutcomeRequest(BaseModel):
     signal_id: UUID
     symbol: str = Field(min_length=1, max_length=32)
+    asset_class: AssetClass
     timeframe: str = Field(pattern="^(1h|4h|1day|1week)$")
     signal_time: str
     outcome_time: str | None = None
