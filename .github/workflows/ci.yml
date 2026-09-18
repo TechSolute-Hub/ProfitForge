@@ -22,6 +22,7 @@ jobs:
         env:
           PYTHONWARNINGS: default
           PYTHONDONTWRITEBYTECODE: '1'
+          LEARNING_VALIDATION: 'strict'
 
   frontend:
     runs-on: ubuntu-latest
