@@ -20,9 +20,13 @@ create table if not exists public.signal_outcomes (
 create index if not exists signal_outcomes_user_time_idx on public.signal_outcomes(user_id, signal_time desc);
 create index if not exists signal_outcomes_model_idx on public.signal_outcomes(timeframe, regime, signal_time desc);
 alter table public.signal_outcomes enable row level security;
+drop policy if exists signal_outcomes_select_own on public.signal_outcomes;
 create policy signal_outcomes_select_own on public.signal_outcomes for select to authenticated using ((select auth.uid()) = user_id);
+drop policy if exists signal_outcomes_insert_own on public.signal_outcomes;
 create policy signal_outcomes_insert_own on public.signal_outcomes for insert to authenticated with check ((select auth.uid()) = user_id);
+drop policy if exists signal_outcomes_update_own on public.signal_outcomes;
 create policy signal_outcomes_update_own on public.signal_outcomes for update to authenticated using ((select auth.uid()) = user_id) with check ((select auth.uid()) = user_id);
+drop policy if exists signal_outcomes_delete_own on public.signal_outcomes;
 create policy signal_outcomes_delete_own on public.signal_outcomes for delete to authenticated using ((select auth.uid()) = user_id);
 
 create table if not exists public.model_versions (
@@ -42,4 +46,5 @@ create table if not exists public.model_versions (
 );
 create unique index if not exists model_versions_active_family_idx on public.model_versions(model_family) where status = 'ACTIVE';
 alter table public.model_versions enable row level security;
+grant select, insert, update, delete on public.signal_outcomes to authenticated;
 revoke all on public.model_versions from anon, authenticated;
