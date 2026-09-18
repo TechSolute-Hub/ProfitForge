@@ -123,7 +123,7 @@ def aggregate_score(factors: dict[str, FactorAssessment]) -> tuple[int, dict[str
         name: round(item.score * item.weight / available_weight, 2) if item.available else 0.0
         for name, item in factors.items()
     }
-    return score, contributions, available_weight
+    return score, contributions, round(available_weight, 12)
 
 
 def confidence_score(score: int, factors: dict[str, FactorAssessment], mtf_alignment: float = 0.0) -> int:
