@@ -98,6 +98,11 @@ create unique index if not exists model_versions_active_family_idx
     on public.model_versions(model_family) where status = 'ACTIVE';
 
 alter table public.model_versions enable row level security;
+drop policy if exists model_versions_no_client_access on public.model_versions;
+create policy model_versions_no_client_access
+    on public.model_versions for all to authenticated
+    using (false)
+    with check (false);
 revoke all on public.model_versions from anon, authenticated;
 grant select, insert, update, delete on public.model_versions to service_role;
 
