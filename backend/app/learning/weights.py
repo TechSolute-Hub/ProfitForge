@@ -88,6 +88,7 @@ class AdaptiveWeightLearner:
 
         scoped = [item for item in observations if regime is None or item.regime == regime]
         proposed = dict(current_weights)
+        changed = False
         for factor in current_weights:
             factor_observations = [item for item in scoped if item.factor == factor]
             hit_rate = self._factor_hit_rate(factor_observations)
@@ -95,6 +96,10 @@ class AdaptiveWeightLearner:
                 continue
             edge = 2 * (hit_rate - 0.5)
             proposed[factor] *= 1 + self.config.learning_rate * edge
+            changed = True
+
+        if not changed:
+            return dict(current_weights)
 
         proposed = {
             key: min(self.config.max_weight, max(self.config.min_weight, value))
