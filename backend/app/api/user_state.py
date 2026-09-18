@@ -35,6 +35,22 @@ class SaveAnalysisRequest(BaseModel):
     result: ResearchResult
 
 
+class SignalOutcomeRequest(BaseModel):
+    signal_id: UUID
+    symbol: str = Field(min_length=1, max_length=32)
+    timeframe: str = Field(pattern="^(1h|4h|1day|1week)$")
+    signal_time: str
+    outcome_time: str | None = None
+    score: int = Field(ge=-100, le=100)
+    bias: str
+    regime: str
+    factor_scores: dict[str, float]
+    factor_contributions: dict[str, float] = Field(default_factory=dict)
+    outcome_return_pct: float | None = None
+    outcome_label: str | None = None
+    horizon_bars: int = Field(ge=1, le=10000)
+
+
 async def get_current_user(
     authorization: str | None = Header(default=None),
     settings: Settings = Depends(get_settings),
@@ -197,3 +213,19 @@ async def save_analysis(
         )
     except SupabaseRepositoryError as exc:
         raise HTTPException(status_code=502, detail="Could not save analysis") from exc
+
+
+@router.post("/signal-outcomes", status_code=204)
+async def record_signal_outcome(
+    request: SignalOutcomeRequest,
+    user: AuthenticatedUser = Depends(get_current_user),
+    authorization: str | None = Header(default=None),
+    settings: Settings = Depends(get_settings),
+) -> None:
+    repo = repository(authorization, settings)
+    payload = request.model_dump(mode="json")
+    payload["user_id"] = str(user.id)
+    try:
+        await repo.record_signal_outcome(payload)
+    except SupabaseRepositoryError as exc:
+        raise HTTPException(status_code=502, detail="Could not save signal outcome") from exc
