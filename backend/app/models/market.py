@@ -1,24 +1,19 @@
 from datetime import datetime
 from enum import Enum
+from uuid import UUID, uuid4
 
 from pydantic import BaseModel, Field
-
 from app.models.context import EconomicContext, NewsSentimentSnapshot
-
 
 class AssetClass(str, Enum):
     STOCK = "stock"
     FOREX = "forex"
     CRYPTO = "crypto"
-
-
 class DataStatus(str, Enum):
     LIVE = "LIVE"
     STALE = "STALE"
     UNAVAILABLE = "UNAVAILABLE"
     INVALID = "INVALID"
-
-
 class MarketSnapshot(BaseModel):
     symbol: str
     asset_class: AssetClass
@@ -28,8 +23,6 @@ class MarketSnapshot(BaseModel):
     status: DataStatus
     currency: str | None = None
     latency_ms: float | None = None
-
-
 class OHLCVBar(BaseModel):
     timestamp: datetime
     open: float = Field(gt=0)
@@ -37,9 +30,10 @@ class OHLCVBar(BaseModel):
     low: float = Field(gt=0)
     close: float = Field(gt=0)
     volume: float | None = Field(default=None, ge=0)
-
-
 class ResearchResult(BaseModel):
+    signal_id: UUID = Field(default_factory=uuid4)
+    model_version: str = "BASELINE"
+    factor_weights: dict[str, float] = Field(default_factory=dict)
     symbol: str
     asset_class: AssetClass
     snapshot: MarketSnapshot
