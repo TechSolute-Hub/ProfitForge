@@ -51,3 +51,15 @@ Forward outcome labeling likewise uses the next bar's open and later bars only. 
 
 ## Production direction
 Next phases should add rolling/out-of-sample validation, walk-forward evaluation, signal/outcome persistence, adaptive weight versioning, observability, scheduled research jobs, alert delivery and additional provider coverage where freshness and licensing requirements are satisfied.
+
+## Phase 7.2 walk-forward and out-of-sample validation
+Rolling validation windows keep training observations strictly before test observations. An optional purge gap separates the two segments to reduce label overlap. The validation layer reports train and OOS trade count, win rate, return, drawdown, profit factor and expectancy, while marking insufficient samples explicitly. It does not fit or tune a model on the OOS segment.
+
+Scores supplied to validation are point-in-time observations. Future work that generates scores from learned parameters must fit those parameters inside each training window and then freeze them before evaluating the corresponding OOS window.
+
+## Phase 8 adaptive learning and model version management
+The adaptive learner proposes changes only to research-factor weights from validated observations. Each factor requires a minimum sample size; weights are bounded and normalized after updates. The learner has no interface for risk limits, position sizing, execution controls or safety thresholds.
+
+Candidate model versions are immutable records with parent lineage, training/OOS observation counts, validation metrics and an artifact checksum. A version must first be marked VALIDATED and can then be explicitly activated. Promotion policy and activation are separate so validation does not silently become deployment. Activating a new version rolls the prior active version back to a retained version record.
+
+Machine-learning promotion remains a later controlled step: candidate models must be evaluated OOS and explicitly promoted after validation. Adaptive learning cannot automatically increase risk.
