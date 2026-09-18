@@ -1,0 +1,38 @@
+name: Promote Research Model
+
+on:
+  workflow_dispatch:
+    inputs:
+      version_id:
+        description: "VALIDATED model version ID to activate"
+        required: true
+        type: string
+
+concurrency:
+  group: research-model-promotion
+  cancel-in-progress: false
+
+jobs:
+  promote:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    defaults:
+      run:
+        working-directory: backend
+    environment: model-promotion
+    env:
+      SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+      SUPABASE_SECRET_KEY: ${{ secrets.SUPABASE_SECRET_KEY }}
+      MODEL_FAMILY: research-factor-v1
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install backend dependencies
+        run: pip install -r requirements.txt
+
+      - name: Activate validated model
+        run: python -m app.learning.promote "${{ inputs.version_id }}"
