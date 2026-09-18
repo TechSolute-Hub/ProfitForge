@@ -3,7 +3,7 @@ create table if not exists public.signal_outcomes (
     signal_id uuid not null,
     user_id uuid not null references auth.users(id) on delete cascade,
     symbol text not null,
-    asset_class text not null check (asset_class in ('STOCK','FOREX','CRYPTO')),
+    asset_class text not null check (asset_class in ('stock','forex','crypto')),
     timeframe text not null check (timeframe in ('1h','4h','1day','1week')),
     signal_time timestamptz not null,
     outcome_time timestamptz,
