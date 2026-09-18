@@ -1,4 +1,5 @@
 import asyncio
+from functools import lru_cache
 from uuid import uuid4
 from fastapi import APIRouter, Depends, HTTPException, Query
 from app.analysis.engine import analyze_multi_timeframe
@@ -13,8 +14,9 @@ DISCLAIMER = "This tool provides market research and analysis assistance only. I
 TIMEFRAMES = ("1h", "4h", "1day", "1week")
 BARS_PER_TIMEFRAME = 250
 
-def get_learning_service(settings: Settings = Depends(get_settings)) -> LearningService:
-    return LearningService(settings)
+@lru_cache(maxsize=1)
+def get_learning_service() -> LearningService:
+    return LearningService(get_settings())
 
 async def _fetch_timeframe(service: MarketService, symbol: str, timeframe: str) -> tuple[str, list | None, str | None]:
     try:
