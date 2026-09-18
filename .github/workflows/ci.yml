@@ -21,6 +21,7 @@ jobs:
       - run: python -m pytest -q
         env:
           PYTHONWARNINGS: default
+          PYTHONDONTWRITEBYTECODE: '1'
 
   frontend:
     runs-on: ubuntu-latest
