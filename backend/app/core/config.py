@@ -19,11 +19,15 @@ class Settings(BaseSettings):
 
     supabase_url: str = ""
     supabase_publishable_key: str = ""
+    supabase_secret_key: str = ""
     supabase_request_timeout_seconds: float = Field(default=10.0, gt=0, le=60)
 
     quote_cache_seconds: int = Field(default=30, ge=0, le=3600)
     bars_cache_seconds: int = Field(default=60, ge=0, le=3600)
     max_data_age_seconds: int = Field(default=900, ge=1, le=86400)
+
+    model_family: str = "research-factor-v1"
+    model_cache_seconds: int = Field(default=300, ge=0, le=86400)
 
     model_config = SettingsConfigDict(
         env_file=".env",
