@@ -142,6 +142,7 @@ class LearningService:
             - baseline_holdout.expectancy_pct
         )
         metrics = {
+            "oos_expectancy_pct": candidate_holdout.expectancy_pct,
             "walk_forward_windows": float(len(windows)),
             "walk_forward_oos_expectancy_pct": walk_forward_oos,
             "walk_forward_oos_hit_rate_pct": walk_forward_hit_rate,
