@@ -33,8 +33,8 @@ def label_outcome(
     if bullish_threshold_pct <= 0 or bearish_threshold_pct >= 0:
         raise ValueError("thresholds must be positive for bullish and negative for bearish")
 
-    future_index = entry_index + horizon_bars
     entry_index = signal_index + 1
+    future_index = entry_index + horizon_bars
     if future_index >= len(bars):
         return OutcomeLabel(
             signal_index=signal_index,
