@@ -1,5 +1,7 @@
 from datetime import datetime, timedelta, timezone
 
+import pytest
+
 from app.backtest.outcomes import label_outcome
 from app.models.market import OHLCVBar
 
@@ -22,8 +24,8 @@ def make_bars(closes: list[float]) -> list[OHLCVBar]:
 def test_outcome_uses_next_bar_open_and_future_close() -> None:
     result = label_outcome(make_bars([100, 105, 110, 120]), 0, 2)
 
-    assert result.entry_price == 105
-    assert result.forward_return_pct == (120 / 105 - 1) * 100
+    assert result.entry_price == pytest.approx(105)
+    assert result.forward_return_pct == pytest.approx((120 / 105 - 1) * 100)
     assert result.label == "POSITIVE"
 
 
