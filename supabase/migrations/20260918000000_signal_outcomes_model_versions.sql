@@ -27,6 +27,17 @@ alter table public.signal_outcomes
     add column if not exists verified boolean not null default false;
 alter table public.signal_outcomes
     add column if not exists verified_at timestamptz;
+do $
+begin
+    if not exists (
+        select 1 from pg_constraint
+        where conname = 'signal_outcomes_asset_class_check'
+    ) then
+        alter table public.signal_outcomes
+            add constraint signal_outcomes_asset_class_check
+            check (asset_class in ('stock', 'forex', 'crypto'));
+    end if;
+end $;
 
 create index if not exists signal_outcomes_user_time_idx
     on public.signal_outcomes(user_id, signal_time desc);
