@@ -5,8 +5,8 @@ from datetime import datetime, timezone
 from app.backtest.outcomes import label_outcome
 from app.core.config import Settings
 from app.learning.persistence import ModelPersistenceError, SupabaseModelRepository
-from app.models.market import AssetClass
 from app.services.market import MarketService
+from app.data.providers.twelve_data import ProviderError
 
 
 class OutcomeVerificationService:
@@ -29,7 +29,7 @@ class OutcomeVerificationService:
             try:
                 if await self._verify_one(row):
                     verified += 1
-            except (ValueError, KeyError, ModelPersistenceError):
+            except (ValueError, KeyError, ModelPersistenceError, ProviderError):
                 continue
         return verified
 
@@ -40,7 +40,6 @@ class OutcomeVerificationService:
         if signal_time.tzinfo is None:
             signal_time = signal_time.replace(tzinfo=timezone.utc)
 
-        AssetClass(str(row["asset_class"]))
         timeframe = str(row["timeframe"])
         horizon_bars = int(row["horizon_bars"])
         bars = await self.market_service.bars(
